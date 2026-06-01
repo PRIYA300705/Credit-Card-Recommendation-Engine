@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CardMatch AI — Find Your Perfect Credit Card</title>
+</head>
+<body>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;}
+:root{
+  --pp:#6D28D9;--pp-light:#EDE9FE;--pp-dark:#4C1D95;
+  --oa:#F97316;--oa-light:#FFF7ED;
+  --bg:#F8F7FF;--white:#FFFFFF;
+  --txt:#111827;--txt2:#6B7280;--txt3:#9CA3AF;
+  --border:#E5E7EB;--success:#16A34A;--success-bg:#F0FDF4;
+}
+
+/* ── Base reset ── */
+html { height: 100%; }
+body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── DESKTOP: centred phone frame ── */
+@media (min-width: 481px) {
+  body {
+    background: linear-gradient(135deg, #ede9fe 0%, #f8f7ff 50%, #ede9fe 100%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 16px;
+  }
+  .phone {
+    width: 390px;
+    max-width: 390px;
+    height: calc(100vh - 80px);   /* fixed height on desktop */
+    background: var(--bg);
+    border-radius: 44px;
+    border: 2px solid rgba(109,40,217,0.15);
+    overflow: hidden;             /* clip the frame edges */
+    position: relative;
+    box-shadow: 0 20px 60px rgba(109,40,217,0.18), 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+  }
+  /* Hide status bar on desktop frame too — cleaner look */
+  .status-bar { display: none; }
+}
+
+/* ── MOBILE: true full-screen native feel ── */
+@media (max-width: 480px) {
+  body {
+    background: var(--bg);
+    display: block;
+    padding: 0;
+  }
+  .phone {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh; /* dynamic viewport — respects browser chrome */
+    background: var(--bg);
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    overflow: hidden; /* phone itself clips; screen scrolls inside */
+    display: flex;
+    flex-direction: column;
+    position: fixed;  /* lock the phone wrapper */
+    top: 0; left: 0; right: 0; bottom: 0;
+  }
+  /* Hide fake status bar — real phone has one */
+  .status-bar { display: none !important; }
+  /* Larger touch targets */
+  .btn-primary  { padding: 17px; font-size: 17px; border-radius: 14px; }
+  .btn-secondary{ padding: 15px; font-size: 16px; border-radius: 14px; }
+  .btn-ghost    { padding: 14px; font-size: 15px; border-radius: 14px; }
+  .chip         { padding: 13px 16px; font-size: 14px; }
+  .back-btn     { width: 40px; height: 40px; font-size: 20px; }
+  .nav-title    { font-size: 17px; }
+  /* Safe area for home indicator */
+  .apply-bar { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
+  /* Nav safe area for notch/dynamic island */
+  .nav-bar, .status-bar { padding-top: max(12px, env(safe-area-inset-top, 12px)); }
+}
+
+/* ── Screen & scroll layout (shared) ── */
+.screen { display:none; width:100%; height:100%; flex-direction:column; background:var(--bg); overflow:hidden; }
+.screen.active { display:flex; }
+.status-bar{background:var(--white);padding:12px 20px 8px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
+.status-bar .time{font-size:13px;font-weight:600;color:var(--txt)}
+.status-icons{display:flex;gap:4px;align-items:center}
+.status-icons span{font-size:11px;font-weight:600;color:var(--txt)}
+.nav-bar{background:var(--white);padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--pp-light);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--pp);font-size:18px;font-weight:700;flex-shrink:0;line-height:1}
+.nav-title{font-size:15px;font-weight:600;color:var(--txt)}
+/* THE KEY FIX: scroll-body is the ONLY scrollable element, everything else is flex-shrink:0 */
+.scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:24px;min-height:0;}
+.btn-primary{display:block;width:100%;padding:15px;background:var(--pp);color:#fff;border:none;border-radius:16px;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:0.2px;font-family:inherit}
+.btn-primary:active{opacity:0.9}
+.btn-secondary{display:block;width:100%;padding:14px;background:var(--white);color:var(--pp);border:2px solid var(--pp);border-radius:16px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-secondary:active{background:var(--pp-light)}
+.btn-ghost{display:block;width:100%;padding:13px;background:transparent;color:var(--txt2);border:1.5px solid var(--border);border-radius:16px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+.apply-bar{background:var(--white);padding:12px 20px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--white);border-radius:16px;border:1px solid var(--border);padding:16px}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.tag-success{background:var(--success-bg);color:#15803D}
+.tag-purple{background:var(--pp-light);color:var(--pp-dark)}
+.tag-orange{background:var(--oa-light);color:#C2410C}
+.progress-bar-bg{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-bar-fill{height:100%;background:var(--pp);border-radius:2px;transition:width 0.4s ease}
+.chip{padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;font-weight:600;color:var(--txt);cursor:pointer;background:var(--white);text-align:center;font-family:inherit}
+.chip.selected{border-color:var(--pp);background:var(--pp-light);color:var(--pp-dark)}
+.credit-card-visual{width:100%;height:168px;border-radius:18px;background:#6D28D9;padding:20px 22px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.consent-card{background:var(--white);border-radius:10px;border:1.5px solid var(--border);padding:14px;display:flex;gap:12px;align-items:flex-start;transition:border-color 0.15s}
+.consent-card.toggled{border-color:var(--pp)}
+.toggle{width:40px;height:22px;border-radius:11px;background:var(--border);position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0}
+.toggle.on{background:var(--pp)}
+.toggle-knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle.on .toggle-knob{left:21px}
+.analysis-step{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.analysis-step:last-child{border-bottom:none}
+.step-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.step-icon.done{background:var(--success-bg);color:var(--success)}
+.step-icon.active{background:var(--pp-light);color:var(--pp)}
+.step-icon.pending{background:#F3F4F6;color:var(--txt3)}
+.why-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.why-item:last-child{border-bottom:none}
+.why-check{width:20px;height:20px;border-radius:50%;background:var(--success-bg);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+.profile-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.profile-row:last-child{border-bottom:none}
+.profile-bar-bg{width:100px;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.profile-bar-fill{height:100%;border-radius:3px}
+.app-logo{display:flex;align-items:center;gap:8px}
+.logo-icon{width:30px;height:30px;border-radius:8px;background:var(--pp);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:700}
+.step-prog{display:flex;gap:6px;padding:6px 20px 8px;background:var(--white)}
+.step-prog-bar{flex:1;height:3px;border-radius:2px}
+</style>
+
+<div class="phone">
+
+<div id="s1" class="screen active">
+  <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 100%</span></div></div>
+  <div style="background:var(--white);padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+    <div class="app-logo"><div class="logo-icon">C</div><span style="font-size:16px;font-weight:700;color:var(--txt);">CardMatch AI</span></div>
+  </div>
+  <div class="scroll-body">
+    <div style="padding:24px 20px 0;">
+      <div style="background:var(--pp);border-radius:20px;padding:24px;color:white;margin-bottom:20px;position:relative;overflow:hidden;">
+        <div style="position:absolute;right:-18px;top:-18px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.07)"></div>
+        <div style="font-size:10px;font-weight:700;opacity:0.7;letter-spacing:1px;margin-bottom:10px;">AI-POWERED</div>
+        <div style="font-size:22px;font-weight:700;line-height:1.25;margin-bottom:8px;">Find Your Perfect<br>Credit Card</div>
+        <div style="font-size:13px;opacity:0.8;line-height:1.5;margin-bottom:16px;">Personalised recommendations powered by your spending habits and financial profile.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:white;">✓ Private & Secure</div>
+          <div style="background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:white;">✓ No CIBIL Impact</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:18px;">
+        <div style="font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.5px;">How it works</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;align-items:center;gap:12px;"><div style="width:36px;height:36px;border-radius:50%;background:var(--pp-light);color:var(--pp);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div><div><div style="font-size:13px;font-weight:600;color:var(--txt);">Share your spending context</div><div style="font-size:12px;color:var(--txt2);margin-top:2px;">SMS insights or a quick quiz</div></div></div>
+          <div style="display:flex;align-items:center;gap:12px;"><div style="width:36px;height:36px;border-radius:50%;background:var(--pp-light);color:var(--pp);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div><div><div style="font-size:13px;font-weight:600;color:var(--txt);">AI analyses your profile</div><div style="font-size:12px;color:var(--txt2);margin-top:2px;">8 behavioural scores in seconds</div></div></div>
+          <div style="display:flex;align-items:center;gap:12px;"><div style="width:36px;height:36px;border-radius:50%;background:var(--pp-light);color:var(--pp);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div><div><div style="font-size:13px;font-weight:600;color:var(--txt);">Get your best-match card</div><div style="font-size:12px;color:var(--txt2);margin-top:2px;">Top 3 ranked with reasoning</div></div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);"><span style="color:var(--success);font-weight:700;">✓</span> Personalised recommendations in under 90 seconds</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);"><span style="color:var(--success);font-weight:700;">✓</span> SMS data never leaves your device</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);"><span style="color:var(--success);font-weight:700;">✓</span> Soft bureau pull — zero CIBIL impact</div>
+      </div>
+    </div>
+  </div>
+  <div class="apply-bar">
+    <button class="btn-primary" onclick="go(2)">Get Started →</button>
+  </div>
+</div>
+
+<div id="s2" class="screen">
+  <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 100%</span></div></div>
+  <div class="nav-bar"><button class="back-btn" onclick="go(1)">←</button><div><div class="nav-title">Data Consent</div></div></div>
+  <div class="step-prog"><div class="step-prog-bar" style="background:var(--pp)"></div><div class="step-prog-bar" style="background:var(--border)"></div><div class="step-prog-bar" style="background:var(--border)"></div></div>
+  <div style="padding:2px 20px 0;background:var(--white);border-bottom:1px solid var(--border);"><div style="font-size:11px;color:var(--txt3);padding-bottom:8px;">Step 1 of 3</div></div>
+  <div class="scroll-body" style="padding:16px 20px 0;">
+    <div style="margin-bottom:16px;"><div style="font-size:20px;font-weight:700;color:var(--txt);margin-bottom:6px;">Help Us Understand<br>Your Spending Style</div><div style="font-size:13px;color:var(--txt2);line-height:1.5;">Toggle what you're comfortable sharing. You can skip any item.</div></div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+      <div class="consent-card toggled" id="cc1">
+        <div><div class="toggle on" id="t1" onclick="toggleConsent(1)"><div class="toggle-knob"></div></div></div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:15px;">💬</span><div style="font-size:14px;font-weight:700;color:var(--txt);">SMS Insights</div><div class="tag tag-purple" style="margin-left:auto;">Recommended</div></div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.45;">Analyses salary credits, EMI, shopping, travel & utility transactions. Processed <strong>on-device only</strong>.</div>
+          <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pp-light);color:var(--pp-dark);font-weight:600;">Salary</span><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pp-light);color:var(--pp-dark);font-weight:600;">EMI</span><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pp-light);color:var(--pp-dark);font-weight:600;">Shopping</span><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pp-light);color:var(--pp-dark);font-weight:600;">Utilities</span><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pp-light);color:var(--pp-dark);font-weight:600;">Travel</span></div>
+        </div>
+      </div>
+      <div class="consent-card toggled" id="cc2">
+        <div><div class="toggle on" id="t2" onclick="toggleConsent(2)"><div class="toggle-knob"></div></div></div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:15px;">📊</span><div style="font-size:14px;font-weight:700;color:var(--txt);">Credit Profile</div><div class="tag tag-success" style="margin-left:auto;">No CIBIL Impact</div></div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.45;">Soft bureau pull to check eligibility. <strong>Not a hard pull</strong> — your score is unaffected.</div>
+        </div>
+      </div>
+      <div class="consent-card" id="cc3">
+        <div><div class="toggle" id="t3" onclick="toggleConsent(3)"><div class="toggle-knob"></div></div></div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:15px;">🏦</span><div style="font-size:14px;font-weight:700;color:var(--txt);">Bank Statement</div><div class="tag" style="margin-left:auto;background:#F3F4F6;color:var(--txt2);">Optional</div></div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.45;">Upload a PDF statement to improve accuracy. Useful with limited SMS history.</div>
+        </div>
+      </div>
+    </div>
+    <div style="background:#FEFCE8;border:1px solid #FEF08A;border-radius:10px;padding:12px;margin-bottom:8px;display:flex;gap:8px;align-items:flex-start;"><span style="font-size:15px;flex-shrink:0;">🔒</span><div style="font-size:12px;color:#854D0E;line-height:1.45;">We never access personal conversations. Only financial transaction signals are analysed.</div></div>
+  </div>
+  <div class="apply-bar">
+    <button class="btn-primary" onclick="go(3)">Allow & Continue →</button>
+    <button class="btn-ghost" onclick="go(4)">Skip — Answer a Few Questions Instead</button>
+  </div>
+</div>
+
+<div id="s3" class="screen">
+  <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 100%</span></div></div>
+  <div class="nav-bar"><button class="back-btn" onclick="go(2)">←</button><div class="nav-title">AI Analysis</div></div>
+  <div class="step-prog"><div class="step-prog-bar" style="background:var(--pp)"></div><div class="step-prog-bar" style="background:var(--pp)"></div><div class="step-prog-bar" style="background:var(--border)"></div></div>
+  <div style="padding:2px 20px 0;background:var(--white);border-bottom:1px solid var(--border);"><div style="font-size:11px;color:var(--txt3);padding-bottom:8px;">Step 2 of 3</div></div>
+  <div class="scroll-body" style="padding:24px 20px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="width:76px;height:76px;border-radius:50%;background:var(--pp-light);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;">🧠</div>
+      <div style="font-size:20px;font-weight:700;color:var(--txt);margin-bottom:6px;">Analysing Your<br>Financial Profile</div>
+      <div style="font-size:13px;color:var(--txt2);">This usually takes 5–8 seconds</div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><div style="font-size:13px;font-weight:600;color:var(--txt);">Progress</div><div id="prog-pct" style="font-size:13px;font-weight:700;color:var(--pp);">0%</div></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div id="astep1" class="analysis-step"><div class="step-icon pending" id="ai1">⏳</div><div><div style="font-size:13px;font-weight:600;color:var(--txt);">Parsing SMS signals on-device</div><div style="font-size:12px;color:var(--txt2);">500 messages · 6 months history</div></div></div>
+      <div id="astep2" class="analysis-step"><div class="step-icon pending" id="ai2">⏳</div><div><div style="font-size:13px;font-weight:600;color:var(--txt);">Understanding income stability</div><div style="font-size:12px;color:var(--txt2);">Salary pattern detection</div></div></div>
+      <div id="astep3" class="analysis-step"><div class="step-icon pending" id="ai3">⏳</div><div><div style="font-size:13px;font-weight:600;color:var(--txt);">Identifying spending categories</div><div style="font-size:12px;color:var(--txt2);">8 behavioural scores</div></div></div>
+      <div id="astep4" class="analysis-step"><div class="step-icon pending" id="ai4">⏳</div><div><div style="font-size:13px;font-weight:600;color:var(--txt);">Evaluating credit health</div><div style="font-size:12px;color:var(--txt2);">Soft bureau pull</div></div></div>
+      <div id="astep5" class="analysis-step"><div class="step-icon pending" id="ai5">⏳</div><div><div style="font-size:13px;font-weight:600;color:var(--txt);">Matching card benefits</div><div style="font-size:12px;color:var(--txt2);">Across partner card catalogue</div></div></div>
+    </div>
+    <div id="analysis-done" style="display:none;background:var(--success-bg);border:1px solid #BBF7D0;border-radius:12px;padding:14px 16px;text-align:center;"><div style="font-size:22px;margin-bottom:6px;">✅</div><div style="font-size:14px;font-weight:700;color:#15803D;">Profile ready! Redirecting…</div></div>
+  </div>
+  <div class="apply-bar" id="analysis-btn" style="display:none;">
+    <button class="btn-primary" onclick="go(5)">View My Recommendations →</button>
+    <button class="btn-ghost" onclick="go(2)">← Back to Consent</button>
+  </div>
+</div>
+
+<div id="s4" class="screen">
+  <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 100%</span></div></div>
+  <div class="nav-bar"><button class="back-btn" onclick="go(2)">←</button><div class="nav-title">Your Preferences</div></div>
+  <div class="step-prog"><div class="step-prog-bar" style="background:var(--pp)"></div><div class="step-prog-bar" style="background:var(--pp)"></div><div class="step-prog-bar" style="background:var(--border)"></div></div>
+  <div style="padding:2px 20px 0;background:var(--white);border-bottom:1px solid var(--border);"><div style="font-size:11px;color:var(--txt3);padding-bottom:8px;">Step 2 of 3 — Preference quiz (consent skipped)</div></div>
+  <div class="scroll-body" style="padding:16px 20px;">
+    <div style="margin-bottom:18px;"><div style="font-size:20px;font-weight:700;color:var(--txt);margin-bottom:6px;">Almost Done</div><div style="font-size:13px;color:var(--txt2);">3 quick questions. Takes under 30 seconds.</div></div>
+    <div class="card" style="margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:12px;">What matters most to you?</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;" id="q1-grid">
+        <div class="chip" onclick="selectChip('q1',this)">💰 Cashback</div>
+        <div class="chip" onclick="selectChip('q1',this)">✈️ Travel Rewards</div>
+        <div class="chip" onclick="selectChip('q1',this)">⛽ Fuel Savings</div>
+        <div class="chip" onclick="selectChip('q1',this)">🎭 Lifestyle Benefits</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:12px;">Monthly card spending?</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;" id="q2-grid">
+        <div class="chip" onclick="selectChip('q2',this)">Below ₹10K</div>
+        <div class="chip" onclick="selectChip('q2',this)">₹10K – ₹30K</div>
+        <div class="chip" onclick="selectChip('q2',this)">₹30K – ₹50K</div>
+        <div class="chip selected" onclick="selectChip('q2',this)">Above ₹50K</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:12px;">Employment type?</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;" id="q3-grid">
+        <div class="chip selected" onclick="selectChip('q3',this)">💼 Salaried</div>
+        <div class="chip" onclick="selectChip('q3',this)">🏢 Self-Employed</div>
+        <div class="chip" onclick="selectChip('q3',this)">🎓 Student</div>
+        <div class="chip" onclick="selectChip('q3',this)">Other</div>
+      </div>
+    </div>
+    <div style="background:var(--oa-light);border:1px solid #FED7AA;border-radius:10px;padding:12px;font-size:12px;color:#9A3412;line-height:1.45;margin-bottom:4px;">ℹ️ Recommendations based on stated preferences may be slightly less precise than those based on SMS data.</div>
+  </div>
+  <div class="apply-bar">
+    <button class="btn-primary" onclick="go(5)">Show My Recommendations →</button>
+    <button class="btn-ghost" onclick="go(2)">← Back to Consent</button>
+  </div>
+</div>
+
+<div id="s5" class="screen">
+  <div class="status-bar"><span class="time">9:42</span><div class="status-icons"><span>●●● WiFi 100%</span></div></div>
+  <div class="nav-bar"><button class="back-btn" onclick="go(2)">←</button><div><div class="nav-title">Your Recommendations</div></div><div class="tag tag-purple" style="margin-left:auto;">3 cards</div></div>
+  <div class="scroll-body" style="padding:16px 20px;">
+    <div style="background:var(--pp);border-radius:20px;padding:18px 20px 20px;color:white;margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">
+        <div style="flex:1;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;opacity:0.75;text-transform:uppercase;margin-bottom:4px;">Best Match For You</div>
+          <div style="font-size:19px;font-weight:700;">Smart Rewards Card</div>
+          <div style="font-size:12px;opacity:0.8;margin-top:2px;">5% cashback on online shopping &amp; utilities</div>
+        </div>
+        <div style="text-align:center;flex-shrink:0;margin-left:12px;background:rgba(255,255,255,0.15);border-radius:12px;padding:8px 12px;">
+          <div style="font-size:24px;font-weight:700;">95%</div>
+          <div style="font-size:9px;opacity:0.75;text-transform:uppercase;letter-spacing:0.5px;">Match</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px 10px;flex:1;">
+          <div style="font-size:10px;opacity:0.75;margin-bottom:2px;">Annual Savings</div>
+          <div style="font-size:15px;font-weight:700;">₹12,400</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px 10px;flex:1;">
+          <div style="font-size:10px;opacity:0.75;margin-bottom:2px;">Approval Odds</div>
+          <div style="font-size:14px;font-weight:700;">High ✓</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px 10px;flex:1;">
+          <div style="font-size:10px;opacity:0.75;margin-bottom:2px;">Annual Fee</div>
+          <div style="font-size:14px;font-weight:700;">₹499</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button style="flex:1;padding:12px;background:white;color:var(--pp);border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="go(6)">Apply Now</button>
+        <button style="flex:1;padding:12px;background:rgba(255,255,255,0.2);color:white;border:2px solid rgba(255,255,255,0.5);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onclick="go(7)">Compare Cards</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span style="color:var(--pp);">★</span> Why this fits you</div>
+      <div>
+        <div class="why-item"><div class="why-check">✓</div><div style="font-size:13px;color:var(--txt);line-height:1.4;">35% of your spending is on online shopping — Smart Rewards returns 5% on every online transaction.</div></div>
+        <div class="why-item"><div class="why-check">✓</div><div style="font-size:13px;color:var(--txt);line-height:1.4;">You pay utility bills every month — Smart Rewards gives 4% on all utility payments.</div></div>
+        <div class="why-item"><div class="why-check">✓</div><div style="font-size:13px;color:var(--txt);line-height:1.4;">Strong credit profile with low utilisation — you likely qualify.</div></div>
+        <div class="why-item"><div class="why-check">✓</div><div style="font-size:13px;color:var(--txt);line-height:1.4;">Consistent salary credits detected for 6+ months — income eligibility met.</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:12px;">Your Financial Profile</div>
+      <div>
+        <div class="profile-row"><div style="font-size:12px;color:var(--txt2);">Income Stability</div><div style="display:flex;align-items:center;gap:8px;"><div class="profile-bar-bg"><div class="profile-bar-fill" style="width:92%;background:var(--success);"></div></div><div style="font-size:11px;font-weight:700;color:var(--success);width:52px;">Excellent</div></div></div>
+        <div class="profile-row"><div style="font-size:12px;color:var(--txt2);">Shopping Affinity</div><div style="display:flex;align-items:center;gap:8px;"><div class="profile-bar-bg"><div class="profile-bar-fill" style="width:85%;background:var(--pp);"></div></div><div style="font-size:11px;font-weight:700;color:var(--pp);width:52px;">High</div></div></div>
+        <div class="profile-row"><div style="font-size:12px;color:var(--txt2);">Travel Affinity</div><div style="display:flex;align-items:center;gap:8px;"><div class="profile-bar-bg"><div class="profile-bar-fill" style="width:52%;background:var(--oa);"></div></div><div style="font-size:11px;font-weight:700;color:var(--oa);width:52px;">Medium</div></div></div>
+        <div class="profile-row"><div style="font-size:12px;color:var(--txt2);">Fuel Spending</div><div style="display:flex;align-items:center;gap:8px;"><div class="profile-bar-bg"><div class="profile-bar-fill" style="width:22%;background:var(--txt3);"></div></div><div style="font-size:11px;font-weight:700;color:var(--txt3);width:52px;">Low</div></div></div>
+        <div class="profile-row"><div style="font-size:12px;color:var(--txt2);">Credit Health</div><div style="display:flex;align-items:center;gap:8px;"><div class="profile-bar-bg"><div class="profile-bar-fill" style="width:88%;background:var(--success);"></div></div><div style="font-size:11px;font-weight:700;color:var(--success);width:52px;">Strong</div></div></div>
+      </div>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:10px;">Also Recommended</div>
+    <div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--pp-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--pp);flex-shrink:0;">ECB</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;color:var(--txt);">Everyday Cashback Card</div><div style="font-size:11px;color:var(--txt2);">5% cashback on online shopping &amp; food delivery</div></div>
+        <div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:var(--pp);">82%</div><div style="font-size:9px;color:var(--txt3);">match</div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;"><div class="tag tag-purple">₹8,200/yr</div><div class="tag tag-success">High Approval</div><div class="tag" style="background:#F3F4F6;color:var(--txt2);">₹250 fee</div></div>
+      <button class="btn-secondary" style="padding:10px;font-size:13px;" onclick="go(6)">Apply Now</button>
+    </div>
+    <div class="card" style="margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#FFF7ED;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#C2410C;flex-shrink:0;">TRV</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;color:var(--txt);">Travel Rewards Card</div><div style="font-size:11px;color:var(--txt2);">Complimentary flight tickets; lounge access</div></div>
+        <div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:var(--oa);">74%</div><div style="font-size:9px;color:var(--txt3);">match</div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;"><div class="tag tag-orange">₹15,800/yr</div><div class="tag" style="background:#FEF9C3;color:#854D0E;">Moderate Approval</div><div class="tag" style="background:#F3F4F6;color:var(--txt2);">₹5,000 fee</div></div>
+      <button class="btn-secondary" style="padding:10px;font-size:13px;color:var(--oa);border-color:var(--oa);" onclick="go(6)">Apply Now</button>
+    </div>
+  </div>
+</div>
+
+<div id="s6" class="screen">
+  <div class="status-bar"><span class="time">9:43</span><div class="status-icons"><span>●●● WiFi 100%</span></div></div>
+  <div class="nav-bar"><button class="back-btn" onclick="go(5)">←</button><div class="nav-title">Apply — Smart Rewards Card</div></div>
+  <div class="scroll-body" style="padding:16px 20px;">
+    <div class="credit-card-visual" style="margin-bottom:20px;">
+      <div><div style="font-size:10px;font-weight:600;opacity:0.7;letter-spacing:1px;text-transform:uppercase;color:white;">Issuing Bank</div><div style="font-size:18px;font-weight:700;color:white;margin-top:4px;">Smart Rewards Card</div></div>
+      <div><div style="font-size:13px;opacity:0.6;letter-spacing:2px;color:white;">•••• •••• •••• 4242</div><div style="display:flex;justify-content:space-between;margin-top:6px;"><div style="font-size:11px;opacity:0.7;color:white;">Rahul Sharma</div><div style="font-size:11px;opacity:0.7;color:white;">Visa Signature</div></div></div>
+    </div>
+    <div class="card" style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:12px;">Pre-filled from your profile</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div><div style="font-size:11px;color:var(--txt2);margin-bottom:4px;">Full Name</div><div style="padding:10px 12px;background:#F9FAFB;border-radius:8px;border:1px solid var(--border);font-size:14px;font-weight:600;color:var(--txt);display:flex;justify-content:space-between;align-items:center;">Rahul Sharma<span style="font-size:10px;color:var(--success);font-weight:700;">✓ PAN Verified</span></div></div>
+        <div><div style="font-size:11px;color:var(--txt2);margin-bottom:4px;">PAN Number</div><div style="padding:10px 12px;background:#F9FAFB;border-radius:8px;border:1px solid var(--border);font-size:14px;font-weight:600;color:var(--txt);display:flex;justify-content:space-between;align-items:center;">ABCDE1234F<span style="font-size:10px;color:var(--success);font-weight:700;">✓ Masked</span></div></div>
+        <div><div style="font-size:11px;color:var(--txt2);margin-bottom:4px;">Mobile Number</div><div style="padding:10px 12px;background:#F9FAFB;border-radius:8px;border:1px solid var(--border);font-size:14px;font-weight:600;color:var(--txt);display:flex;justify-content:space-between;align-items:center;">+91 98765 43210<span style="font-size:10px;color:var(--success);font-weight:700;">✓ OTP Done</span></div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:12px;">A few more details</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div><div style="font-size:11px;color:var(--txt2);margin-bottom:4px;">City of Residence</div><input type="text" placeholder="e.g. Mumbai" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--txt);background:var(--white);outline:none;font-family:inherit;" /></div>
+        <div><div style="font-size:11px;color:var(--txt2);margin-bottom:4px;">Employer Name</div><input type="text" placeholder="e.g. Tata Consultancy" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--txt);background:var(--white);outline:none;font-family:inherit;" /></div>
+        <div><div style="font-size:11px;color:var(--txt2);margin-bottom:4px;">Monthly Income (₹)</div><input type="text" placeholder="e.g. 80,000" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--txt);background:var(--white);outline:none;font-family:inherit;" /></div>
+      </div>
+    </div>
+    <div style="background:var(--success-bg);border:1px solid #BBF7D0;border-radius:10px;padding:12px;font-size:12px;color:#15803D;line-height:1.5;margin-bottom:4px;">🔒 Your application is submitted directly to the issuing bank's secure system. No data is shared with third parties.</div>
+  </div>
+  <div class="apply-bar">
+    <button class="btn-primary" onclick="showSuccess()">Submit Application →</button>
+    <button class="btn-ghost" onclick="go(5)">← Back to Recommendations</button>
+  </div>
+  <div id="success-overlay" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.98);z-index:100;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;">
+    <div style="font-size:52px;margin-bottom:18px;">🎉</div>
+    <div style="font-size:22px;font-weight:700;color:var(--txt);margin-bottom:8px;">Application Submitted!</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:20px;line-height:1.5;">Your application for Smart Rewards Card has been submitted to the issuing bank.</div>
+    <div style="background:var(--pp-light);border-radius:14px;padding:16px 20px;margin-bottom:20px;width:100%;"><div style="font-size:11px;color:var(--pp-dark);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Reference Number</div><div style="font-size:20px;font-weight:700;color:var(--pp);">REF-2026-483921</div></div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:20px;">SMS sent to +91 98765 43210. Status update in 2–5 business days.</div>
+    <button class="btn-secondary" onclick="go(5)" style="margin-bottom:8px;">← Back to Recommendations</button>
+    <button class="btn-ghost" onclick="go(1)">Back to Home</button>
+  </div>
+</div>
+
+<div id="s7" class="screen">
+  <div class="status-bar"><span class="time">9:43</span><div class="status-icons"><span>●●● WiFi 100%</span></div></div>
+  <div class="nav-bar"><button class="back-btn" onclick="go(5)">←</button><div class="nav-title">Compare Cards</div></div>
+  <div class="scroll-body" style="padding:0;">
+    <div style="display:flex;border-bottom:2px solid var(--border);background:var(--white);">
+      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);"><div style="font-size:10px;font-weight:700;color:var(--pp);text-transform:uppercase;">★ Best</div><div style="font-size:12px;font-weight:700;color:var(--txt);">Smart Rewards</div><div style="font-size:10px;color:var(--txt2);">95% match</div></div>
+      <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border);"><div style="font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;">#2</div><div style="font-size:12px;font-weight:700;color:var(--txt);">Everyday Cashback</div><div style="font-size:10px;color:var(--txt2);">82% match</div></div>
+      <div style="flex:1;padding:10px 6px;text-align:center;"><div style="font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;">#3</div><div style="font-size:12px;font-weight:700;color:var(--txt);">Travel Rewards</div><div style="font-size:10px;color:var(--txt2);">74% match</div></div>
+    </div>
+    <div style="padding:0 16px 16px;">
+      <div style="display:flex;padding:10px 0 6px;border-bottom:1px solid var(--border);"><div style="width:82px;font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;flex-shrink:0;padding-top:1px;">Annual Fee</div><div style="flex:1;font-size:13px;font-weight:700;color:var(--success);text-align:center;">₹499</div><div style="flex:1;font-size:13px;color:var(--txt);text-align:center;">₹250</div><div style="flex:1;font-size:13px;color:var(--txt);text-align:center;">₹5,000</div></div>
+      <div style="display:flex;padding:10px 0 6px;border-bottom:1px solid var(--border);"><div style="width:82px;font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;flex-shrink:0;padding-top:1px;">Reward Rate</div><div style="flex:1;font-size:13px;font-weight:700;color:var(--success);text-align:center;">2% flat</div><div style="flex:1;font-size:13px;color:var(--txt);text-align:center;">5% apps</div><div style="flex:1;font-size:13px;color:var(--txt);text-align:center;">5 Miles</div></div>
+      <div style="display:flex;padding:10px 0 6px;border-bottom:1px solid var(--border);"><div style="width:82px;font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;flex-shrink:0;padding-top:1px;">Travel</div><div style="flex:1;font-size:13px;color:var(--txt);text-align:center;">Basic</div><div style="flex:1;font-size:13px;color:var(--txt);text-align:center;">None</div><div style="flex:1;font-size:13px;font-weight:700;color:var(--success);text-align:center;">Premium</div></div>
+      <div style="display:flex;padding:10px 0 6px;border-bottom:1px solid var(--border);"><div style="width:82px;font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;flex-shrink:0;padding-top:1px;">Cashback</div><div style="flex:1;font-size:13px;font-weight:700;color:var(--success);text-align:center;">Yes</div><div style="flex:1;font-size:13px;font-weight:700;color:var(--success);text-align:center;">Yes</div><div style="flex:1;font-size:13px;color:var(--txt3);text-align:center;">Points only</div></div>
+      <div style="display:flex;padding:10px 0 6px;border-bottom:1px solid var(--border);"><div style="width:82px;font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;flex-shrink:0;padding-top:1px;">Approval</div><div style="flex:1;text-align:center;"><span class="tag tag-success" style="font-size:10px;">High</span></div><div style="flex:1;text-align:center;"><span class="tag tag-success" style="font-size:10px;">High</span></div><div style="flex:1;text-align:center;"><span class="tag tag-orange" style="font-size:10px;">Moderate</span></div></div>
+      <div style="display:flex;padding:10px 0 6px;border-bottom:1px solid var(--border);"><div style="width:82px;font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;flex-shrink:0;padding-top:1px;">Est. Savings</div><div style="flex:1;font-size:13px;font-weight:700;color:var(--pp);text-align:center;">₹12,400</div><div style="flex:1;font-size:13px;font-weight:600;color:var(--txt);text-align:center;">₹8,200</div><div style="flex:1;font-size:13px;font-weight:600;color:var(--txt);text-align:center;">₹15,800</div></div>
+      <div style="display:flex;padding:10px 0 4px;gap:4px;">
+        <div style="width:82px;flex-shrink:0;"></div>
+        <div style="flex:1;padding:0 3px;"><button style="width:100%;padding:9px 4px;background:var(--pp);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="go(6)">Apply</button></div>
+        <div style="flex:1;padding:0 3px;"><button style="width:100%;padding:9px 4px;background:var(--white);color:var(--pp);border:2px solid var(--pp);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="go(6)">Apply</button></div>
+        <div style="flex:1;padding:0 3px;"><button style="width:100%;padding:9px 4px;background:var(--white);color:var(--oa);border:2px solid var(--oa);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="go(6)">Apply</button></div>
+      </div>
+    </div>
+    <div style="margin:0 16px 20px;">
+      <div style="background:var(--pp-light);border-radius:12px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--pp-dark);margin-bottom:4px;">Our Recommendation</div>
+        <div style="font-size:12px;color:var(--pp-dark);line-height:1.5;">Given your high online shopping activity and consistent monthly income, Smart Rewards delivers the best value. 5% cashback on shopping and 4% on utilities maximises every rupee you spend.</div>
+      </div>
+    </div>
+    <div style="padding:0 16px 20px;">
+      <button class="btn-ghost" onclick="go(5)">← Back to Recommendations</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+let analysisStarted=false;
+function go(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  if(n===3&&!analysisStarted){analysisStarted=true;runAnalysis();}
+  if(n===6){const ov=document.getElementById('success-overlay');if(ov)ov.style.display='none';}
+}
+function toggleConsent(n){
+  const t=document.getElementById('t'+n);
+  const c=document.getElementById('cc'+n);
+  t.classList.toggle('on');
+  c.classList.toggle('toggled');
+}
+function selectChip(group,el){
+  const grid=el.parentNode;
+  grid.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function runAnalysis(){
+  const steps=[
+    {id:'ai1',pct:20,delay:700},
+    {id:'ai2',pct:42,delay:1500},
+    {id:'ai3',pct:65,delay:2400},
+    {id:'ai4',pct:82,delay:3300},
+    {id:'ai5',pct:100,delay:4200},
+  ];
+  const fill=document.getElementById('prog-fill');
+  const pct=document.getElementById('prog-pct');
+  steps.forEach((step,i)=>{
+    setTimeout(()=>{
+      if(i>0){
+        const prev=document.getElementById(steps[i-1].id);
+        prev.classList.remove('active');prev.classList.add('done');prev.textContent='✓';
+      }
+      const el=document.getElementById(step.id);
+      el.classList.remove('pending');el.classList.add('active');el.textContent='⚡';
+      fill.style.width=step.pct+'%';
+      pct.textContent=step.pct+'%';
+    },step.delay);
+  });
+  setTimeout(()=>{
+    const last=document.getElementById('ai5');
+    last.classList.remove('active');last.classList.add('done');last.textContent='✓';
+    document.getElementById('analysis-done').style.display='block';
+    document.getElementById('analysis-btn').style.display='flex';
+    setTimeout(()=>go(5),1200);
+  },5000);
+}
+function showSuccess(){
+  const ov=document.getElementById('success-overlay');
+  ov.style.display='flex';
+}
+</script>
+</body>
+</html>
